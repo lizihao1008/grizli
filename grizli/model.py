@@ -2451,7 +2451,7 @@ class GrismFLT(object):
 
             self.grism = ImageData(hdulist=grism_im, sci_extn=sci_extn,
                                    wcs=wcs,
-                                   process_jwst_header=process_jwst_header,module=self.module)
+                                   process_jwst_header=process_jwst_header)
         else:
             if (grism_file is None) | (grism_file == ''):
                 self.grism = None
