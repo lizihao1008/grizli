@@ -3943,7 +3943,8 @@ class BeamCutout(object):
             Order of the polynomial model
         """
         self.background = 0.
-        self.module = flt.grism.module
+        # self.module = None
+        # self.module = flt.grism.module
         
         if fits_file is not None:
             self.load_fits(fits_file, conf)
