@@ -15,7 +15,7 @@ from .jwst_utils import crds_reffiles
 
 DEFAULT_CRDS_CONTEXT = "jwst_1123.pmap"
 
-NIRCAM_CONF_VERSION = "V8.5"
+NIRCAM_CONF_VERSION = "V8"
 
 if os.getenv("NIRCAM_CONF_VERSION") is not None:
     NIRCAM_CONF_VERSION = os.getenv("NIRCAM_CONF_VERSION")
@@ -797,11 +797,6 @@ def get_config_filename(
 
         fi = grism
         gr = filter[-1]  # R, C
-        # conf_file = os.path.join(GRIZLI_PATH,
-        #             f'CONF/GRISM_NIRCAM/gNIRCAM.{fi}.mod{module}.{gr}.conf')
-        #
-        # conf_file = os.path.join(GRIZLI_PATH,
-        #             f'CONF/GRISM_NIRCAM/V2/NIRCAM_{fi}_mod{module}_{gr}.conf')
 
         # NIRCam preference: 8.5 > 8 > 4
 
@@ -810,8 +805,7 @@ def get_config_filename(
             f"CONF/GRISM_NIRCAM/[[NIRCAM_VERSION]]/NIRCAM_{fi}_mod{module}_{gr}.conf",
         )
 
-        _conf_versions = [NIRCAM_CONF_VERSION, "V8.5", "V8", "V4", "V6"]
-
+        _conf_versions = [NIRCAM_CONF_VERSION, "V9","V8.5", "V8", "V4", "V6"]
         conf_file = None
         for NIRCAM_VERSION in _conf_versions:
             conf_file = conf_file_base.replace("[[NIRCAM_VERSION]]", NIRCAM_VERSION)
@@ -1285,7 +1279,18 @@ class TransformGrismconf(object):
         rev = self.transform.forward(x0[0] + tdx, x0[1] + tdy)
         trace_dy = rev[1, :] - y
         # trace_dy = y - rev[1,:]
+        # if 'NIRCAM' in  self.conf_file:
+        #     pupil = self.conf_file.split('.')[0][-1]
+        #     filt = self.conf_file.split('NIRCAM_')[1].split('_mod')[0]
+        #     mod = self.conf_file.split('_mod')[1][0]
+        #     if filt == 'F444W':
+        #         if (mod == 'A') & (pupil == 'R'):
+        #             # trace_dy += 2
+        #             pass
 
+        #         if (mod == 'B') & (pupil == 'R'):
+        #             # trace_dy += 0
+        #             pass
         # Trace offsets for NIRCam
         if "V4/NIRCAM_F444W_modB_R.conf" in self.conf_file:
             trace_dy += -0.5
@@ -1328,12 +1333,14 @@ class TransformGrismconf(object):
         ):
             # print('V8: do nothing')
             pass
-
-        elif os.path.basename(self.conf_file) == "NIRCAM_F444W_modA_R.conf":
-            trace_dy += -2.5
-        elif os.path.basename(self.conf_file) == "NIRCAM_F444W_modA_C.conf":
-            trace_dy += -0.1
-
+        if "V9/NIRCAM_F444W_modA_R.conf" in self.conf_file:
+            trace_dy += 2
+        # if "V9/NIRCAM_F444W_modB_R.conf" in self.conf_file:
+        #     trace_dy += -0.5
+        if "V9/NIRCAM_F356W_modB_R.conf" in self.conf_file:
+            trace_dy += 0.5
+        if "V9/NIRCAM_F356W_modA_R.conf" in self.conf_file:
+            trace_dy += 1
         wave = self.conf.DISPL(self.order_names[beam], *x0, t)
         if self.transform.instrument != "HST":
             wave *= 1.0e4
@@ -1508,13 +1515,7 @@ def load_grism_config(conf_file, warnings=True):
         Configuration file object.  Runs `conf.get_beams()` to read the
         sensitivity curves.
     """
-    if "V3/NIRCAM" in conf_file:
-        conf = TransformGrismconf(conf_file)
-        conf.get_beams()
-    elif "V2/NIRCAM" in conf_file:
-        conf = TransformGrismconf(conf_file)
-        conf.get_beams()
-    elif "V4/NIRCAM" in conf_file:
+    if "V4/NIRCAM" in conf_file:
         conf = TransformGrismconf(conf_file)
         conf.get_beams()
     elif "V8/NIRCAM" in conf_file:

@@ -1971,6 +1971,16 @@ def parse_visits(files=[], field_root='', RAW_PATH='../RAW', use_visit=True, com
             if g['direct'] is None:
                 g['direct'] = direct
 
+    # GO-0648 mixes F444W direct and F410M grism
+    if (len(all_groups) > 0) and ( ('jw0648' in files[0]) ):
+        for v in visits:
+            if 'clear' in v['product']:
+                print('direct: ', v['product'])
+                direct = v
+        for g in all_groups:
+            if g['direct'] is None:
+                g['direct'] = direct
+
     print('\n == Grism groups ==\n')
     valid_groups = []
     for g in all_groups:
@@ -3208,7 +3218,7 @@ def load_GroupFLT(field_root='j142724+334246', PREP_PATH='../Prep', force_ref=No
     # NIRCam
     for ig, gr in enumerate(['GRISMR','GRISMC']):
         for filt in ['F277W', 'F356W', 'F444W',
-                     'F300M','F335M','F360M','F410M','F430M','F460M','F480M']:
+                     'F300M','F335M','F360M','F410M','F430M','F460M','F480M','F322W2']:
             #key = f'{gr.lower()}-{filt.lower()}'
             key = filt.lower() + '-clear'
             if key in masks:
@@ -3353,7 +3363,7 @@ def load_GroupFLT(field_root='j142724+334246', PREP_PATH='../Prep', force_ref=No
         return [grp]
 
 
-def grism_prep(field_root='j142724+334246', PREP_PATH='../Prep', EXTRACT_PATH='../Extractions', ds9=None, refine_niter=3, gris_ref_filters=GRIS_REF_FILTERS, force_ref=None, files=None, split_by_grism=True, refine_poly_order=1, refine_fcontam=0.5, cpu_count=0, mask_mosaic_edges=False, prelim_mag_limit=25, refine_mag_limits=[18, 24], init_coeffs=[1.1, -0.5], grisms_to_process=None, pad=(64, 256), model_kwargs={'compute_size': True}, sep_background_kwargs=None, subtract_median_filter=False, median_filter_size=71, median_filter_central=10, second_pass_filtering=False, box_filter_sn=3, box_filter_width=3, median_mask_sn_threshold=None, median_mask_dilate=8, prelim_model_for_median=False, use_jwst_crds=False):
+def grism_prep(field_root='j142724+334246', PREP_PATH='../Prep', EXTRACT_PATH='../Extractions', ds9=None, refine_niter=3, gris_ref_filters=GRIS_REF_FILTERS, force_ref=None, force_cat=None,force_seg=None, files=None, split_by_grism=True, refine_poly_order=1, refine_fcontam=0.5, cpu_count=0, mask_mosaic_edges=False, prelim_mag_limit=25, refine_mag_limits=[18, 24], init_coeffs=[1.1, -0.5], grisms_to_process=None, pad=(64, 256), model_kwargs={'compute_size': True}, sep_background_kwargs=None, subtract_median_filter=False, median_filter_size=71, median_filter_central=10, second_pass_filtering=False, box_filter_sn=3, box_filter_width=3, median_mask_sn_threshold=None, median_mask_dilate=8, prelim_model_for_median=False, use_jwst_crds=False):
     """
     Contamination model pipeline for grism exposures
     
@@ -3484,6 +3494,8 @@ def grism_prep(field_root='j142724+334246', PREP_PATH='../Prep', EXTRACT_PATH='.
                                 files=files,
                                 split_by_grism=split_by_grism, 
                                 force_ref=force_ref,
+                                force_cat=force_cat,
+                                force_seg=force_seg,
                                 pad=pad,
                                 use_jwst_crds=use_jwst_crds)
 
@@ -3793,12 +3805,14 @@ def extract(field_root='j142724+334246', maglim=[13, 24], prior=None, MW_EBV=0.0
 
     # Use "binning" templates for standardized extraction
     if oned_R:
-        bin_steps, step_templ = utils.step_templates(wlim=[5000, 18000.0],
+        # zihao extend the wavelength
+        bin_steps, step_templ = utils.step_templates(wlim=[5000, 5.5e4],
                                                      R=oned_R, round=10)
         init_templates = step_templ
     else:
         # Polynomial templates
-        wave = np.linspace(2000, 2.5e4, 100)
+        # zihao extend the wavelength
+        wave = np.linspace(2000, 5.5e4, 200)
         poly_templ = utils.polynomial_templates(wave, order=poly_order)
         init_templates = poly_templ
 
@@ -3821,7 +3835,7 @@ def extract(field_root='j142724+334246', maglim=[13, 24], prior=None, MW_EBV=0.0
     # Stacked spectra
     for ii, id in enumerate(ids):
         if skip_complete:
-            if os.path.exists('{0}_{1:05d}.stack.png'.format(target, id)):
+            if os.path.exists('{0}_{1:05d}.1D.fits'.format(target, id)):
                 continue
 
         beams = grp.get_beams(id, size=size, beam_id='A', min_sens=min_sens)
@@ -3855,7 +3869,8 @@ def extract(field_root='j142724+334246', maglim=[13, 24], prior=None, MW_EBV=0.0
             if (np.max((b.model/b.grism['ERR'])[b.fit_mask.reshape(b.sh)]) > sn_lim) | (sn_lim > 100):
                 print(' Fit trace shift: \n')
                 try:
-                    shift = mb.fit_trace_shift(tol=1.e-3, verbose=True, split_groups=True, lm=True)
+                    # shift = mb.fit_trace_shift(tol=1.e-3, verbose=True, split_groups=True, lm=True)
+                    shift = mb.fit_trace_shift(tol=1.e-3, verbose=True, split_groups=True, lm=False)
                 except:
                     pass
 
@@ -3880,7 +3895,7 @@ def extract(field_root='j142724+334246', maglim=[13, 24], prior=None, MW_EBV=0.0
         except:
             continue
 
-        hdu, fig = mb.drizzle_grisms_and_PAs(fcontam=0.5, flambda=False, kernel='point', size=32, tfit=tfit, diff=diff)
+        hdu, fig = mb.drizzle_grisms_and_PAs(fcontam=0.5, flambda=False, kernel='point', size=32, tfit=tfit, diff=diff,pixfrac=1)
         fig.savefig('{0}_{1:05d}.stack.png'.format(target, id))
 
         hdu.writeto('{0}_{1:05d}.stack.fits'.format(target, id),
@@ -3947,11 +3962,11 @@ def generate_fit_params(field_root='j142724+334246', fitter=['nnls', 'bounded'],
     from . import photoz
 
     phot = None
+    # zihao
+    t0 = utils.load_templates(fwhm=fwhm, line_complexes=True, stars=False, full_line_list=full_line_list, continuum_list=None, fsps_templates=fsps, alf_template=True, lorentz=lorentz)
+    t1 = utils.load_templates(fwhm=fwhm, line_complexes=False, stars=False, full_line_list=full_line_list, continuum_list=None, fsps_templates=fsps, alf_template=True, lorentz=lorentz)
 
-    t0 = utils.load_templates(fwhm=fwhm, line_complexes=True, stars=False, full_line_list=None, continuum_list=None, fsps_templates=fsps, alf_template=True, lorentz=lorentz)
-    t1 = utils.load_templates(fwhm=fwhm, line_complexes=False, stars=False, full_line_list=None, continuum_list=None, fsps_templates=fsps, alf_template=True, lorentz=lorentz)
-
-    args = fitting.run_all(0, t0=t0, t1=t1, fwhm=1200, zr=zr, dz=dz, fitter=fitter, group_name=field_root, fit_stacks=False, prior=prior,  fcontam=fcontam, pline=pline, min_sens=min_sens, mask_sn_limit=np.inf, fit_beams=False,  root=field_root, fit_trace_shift=fit_trace_shift, phot=phot, use_phot_obj=use_phot_obj, verbose=True, scale_photometry=False, show_beams=True, overlap_threshold=10, get_ir_psfs=True, fit_only_beams=fit_only_beams, MW_EBV=MW_EBV, sys_err=sys_err, get_dict=True, full_line_list=full_line_list)
+    args = fitting.run_all(0, t0=t0, t1=t1, fwhm=fwhm, zr=zr, dz=dz, fitter=fitter, group_name=field_root, fit_stacks=False, prior=prior,  fcontam=fcontam, pline=pline, min_sens=min_sens, mask_sn_limit=np.inf, fit_beams=False,  root=field_root, fit_trace_shift=fit_trace_shift, phot=phot, use_phot_obj=use_phot_obj, verbose=True, scale_photometry=False, show_beams=True, overlap_threshold=10, get_ir_psfs=True, fit_only_beams=fit_only_beams, MW_EBV=MW_EBV, sys_err=sys_err, get_dict=True, full_line_list=full_line_list)
     
     for k in kwargs:
         if k in args:

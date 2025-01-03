@@ -63,8 +63,7 @@ for d in [1,2,3,4]:
 if 'CRDS_CONTEXT' in os.environ:
     CRDS_CONTEXT = os.getenv('CRDS_CONTEXT')
 else:
-    CRDS_CONTEXT = 'jwst_1069.pmap'
-    # CRDS_CONTEXT = 'jwst_1123.pmap'
+    CRDS_CONTEXT = 'jwst_1312.pmap'
 
 
 def get_pipeline_object():
@@ -120,7 +119,8 @@ def process_level1_to_dark(file):
     return dark
 
 
-def process_uncal_level1(file='jw01208048001_03101_00001_nrs1_uncal.fits', output_extension='_xrate', jump_threshold=4, jump_ndilate=1, erode_snowballs=5, grow_snowballs=5, resid_thresh=4, hot_thresh='auto', hot_type='diff', max_njump=6, groups_for_rnoise=np.inf, flag_for_persistence=True, outlier_min_nints=3, integration_sigmas=[5,4,3], rescale_uncertainty=True, rescale_with_background=True, bkg_kwargs=BKG_KWARGS, dark=None, verbose=True, debug=None, **kwargs):
+def process_uncal_level1(file='jw01208048001_03101_00001_nrs1_uncal.fits', output_extension='_xrate', output_dir='.',
+jump_threshold=4, jump_ndilate=1, erode_snowballs=5, grow_snowballs=5, resid_thresh=4, hot_thresh='auto', hot_type='diff', max_njump=6, groups_for_rnoise=np.inf, flag_for_persistence=True, outlier_min_nints=3, integration_sigmas=[5,4,3], rescale_uncertainty=True, rescale_with_background=True, bkg_kwargs=BKG_KWARGS, dark=None, verbose=True, debug=None, **kwargs):
     """
     Custom ramp-fit scripts for JWST uncal images.
 
@@ -764,7 +764,7 @@ def process_uncal_level1(file='jw01208048001_03101_00001_nrs1_uncal.fits', outpu
         im['VAR_RNOISE'].data = rn_var.astype(im['VAR_RNOISE'].data.dtype)
         im['VAR_POISSON'].data = p_var.astype(im['VAR_POISSON'].data.dtype)
         
-        im.writeto(file.replace('_uncal', output_extension), overwrite=True)
+        im.writeto(os.path.join(output_dir, file.replace('_uncal', output_extension)), overwrite=True)
         
         
     debug = {'file':file,

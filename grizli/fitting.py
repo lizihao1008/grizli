@@ -605,10 +605,14 @@ def run_all(
             mb.set_photometry(min_err=sys_err, **phot)
 
     if t0 is None:
-        t0 = utils.load_templates(line_complexes=True, fsps_templates=True, fwhm=fwhm)
+        print('--------')
+        print('load t0')
+        t0 = utils.load_templates(line_complexes=True, fsps_templates=True, fwhm=fwhm, full_line_list=full_line_list)
 
     if t1 is None:
-        t1 = utils.load_templates(line_complexes=False, fsps_templates=True, fwhm=fwhm)
+        print('--------')
+        print('load t1')
+        t1 = utils.load_templates(line_complexes=False, fsps_templates=True, fwhm=fwhm, full_line_list=full_line_list)
 
     # Fit on stacked spectra or individual beams
     if fit_only_beams:
@@ -656,6 +660,7 @@ def run_all(
         bounded_kwargs=bounded_kwargs,
         huber_delta=huber_delta,
         get_student_logpdf=get_student_logpdf,
+        full_line_list=full_line_list
     )
 
     fit_hdu = pyfits.table_to_hdu(fit)
@@ -720,6 +725,7 @@ def run_all(
             huber_delta=huber_delta,
             get_student_logpdf=get_student_logpdf,
             bounded_kwargs=bounded_kwargs,
+            full_line_list=full_line_list
         )
 
         mb_fit_hdu = pyfits.table_to_hdu(mb_fit)
@@ -978,7 +984,8 @@ def run_all(
         line_hdu = mb.drizzle_fit_lines(
             tfit,
             pline,
-            force_line=utils.DEFAULT_LINE_LIST,
+            # force_line=utils.DEFAULT_LINE_LIST,
+            force_line=full_line_list,
             save_fits=False,
             mask_lines=True,
             min_line_sn=min_line_sn,
@@ -3113,6 +3120,7 @@ class GroupFitter(object):
         Rspline=30,
         huber_delta=4,
         get_student_logpdf=False,
+        full_line_list=utils.DEFAULT_LINE_LIST,
     ):
 
         """
@@ -3368,6 +3376,7 @@ class GroupFitter(object):
                 stars=stars,
                 line_complexes=line_complexes,
                 fsps_templates=fsps_templates,
+                full_line_list=full_line_list
             )
         else:
             if verbose:

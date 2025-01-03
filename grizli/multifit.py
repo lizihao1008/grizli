@@ -1918,8 +1918,7 @@ class MultiBeam(GroupFitter):
         self.ivarf = np.hstack([b.ivarf for b in self.beams])
 
         self.fit_mask &= (self.ivarf >= 0)
-        # zihao: add condition self.sivarf > 0 to avoid error in fitting: Except: covar!
-        self.fit_mask &= self.sivarf > 0
+
         self.scif = np.hstack([b.scif for b in self.beams])
         self.idf = np.hstack([b.scif*0+ib for ib, b in enumerate(self.beams)])
         self.idf = np.asarray(self.idf,dtype=int)
@@ -1935,7 +1934,8 @@ class MultiBeam(GroupFitter):
         weightf[~np.isfinite(weightf)] = 0
         self.weightf = weightf
         self.fit_mask &= self.weightf > 0
-
+        # zihao: add condition self.sivarf > 0 to avoid error in fitting: Except: covar!
+        self.fit_mask &= self.sivarf > 0
         self.slices = self._get_slices(masked=False)
         self._update_beam_mask()
 
@@ -2774,7 +2774,7 @@ class MultiBeam(GroupFitter):
                      fit_background=True, fitter='nnls',
                      delta_chi2_threshold=0.004, zoom=True,
                      line_complexes=True, templates={}, figsize=[8, 5],
-                     fsps_templates=False):
+                     fsps_templates=False,full_line_list=DEFAULT_LINE_LIST):
         """TBD
         """
         from numpy.polynomial import Polynomial
@@ -2804,7 +2804,8 @@ class MultiBeam(GroupFitter):
 
         # Set up for template fit
         if templates == {}:
-            templates = utils.load_templates(fwhm=fwhm, stars=stars, line_complexes=line_complexes, fsps_templates=fsps_templates)
+            print(full_line_list)
+            templates = utils.load_templates(fwhm=fwhm, stars=stars, line_complexes=line_complexes, fsps_templates=fsps_templates,full_line_list=full_line_list)
         else:
             if verbose:
                 print('User templates! N={0} \n'.format(len(templates)))
@@ -5569,6 +5570,7 @@ def drizzle_2d_spectrum_wcs(beams, data=None, wlimit=[1.05, 1.75], dlam=50,
         # Get specific WCS for each beam
         # zihao
         beam_header, beam_wcs = beam.full_2d_wcs()
+        # beam_header, beam_wcs = beam.get_2d_wcs()
         beam_wcs = beam.grism.wcs.deepcopy()
 
         # Shift SIP reference

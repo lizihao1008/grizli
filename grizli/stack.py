@@ -1697,11 +1697,14 @@ class StackedSpectrum(object):
         self.is_flambda = self.header["ISFLAM"]
         self.conf_file = self.header["CONF"]
         try:
-            self.conf = grismconf.aXeConf(self.conf_file)
+            if "NIRCAM" in self.conf_file:
+                self.conf = grismconf.TransformGrismconf(self.conf_file)
+            else:
+                self.conf = grismconf.aXeConf(self.conf_file)
         except:
             # Try global path
             base = os.path.basename(self.conf_file)
-            localfile = os.path.join(GRIZLI_PATH, "CONF", base)
+            localfile = os.path.join(GRIZLI_PATH, 'CONF', base)
             self.conf = grismconf.aXeConf(localfile)
 
         self.conf.get_beams()

@@ -264,9 +264,12 @@ class GrismDisperser(object):
         self.spectrum_1d = None
         self.is_cgs = False
 
+        #zihao test here
         self.xc = self.sh[1]/2+self.origin[1]
         self.yc = self.sh[0]/2+self.origin[0]
-
+        # print('--------------')
+        # print(f'disperse xc={self.xc},yc={self.yc}')
+        # print('--------------')
         # Sub-pixel centering of the exact center of the object, relative
         # to the center of the thumbnail
         self.xcenter = xcenter
@@ -3107,15 +3110,23 @@ class GrismFLT(object):
 
             # Thumbnails
             # print '!! X, Y: ', x, y, self.direct.origin, size
+            #zihao: test here
             if xcat is not None:
-                #zihao: 
+                # xc, yc = int(np.round(xcat))+1, int(np.round(ycat))+1
+                # xcenter = (xcat-(xc-1))
+                # ycenter = (ycat-(yc-1))
                 xc, yc = int(np.round(xcat)), int(np.round(ycat))
                 xcenter = xcat-xc
                 ycenter = ycat-yc
+                # print(f'xc={xc},yc={yc}')
+                # print(f'xcenter={xcenter:.5f},ycenter={ycenter:.5f}')
                 # print(f'xc+xcenter={xc+xcenter:.5f},xc+xcenter={yc+ycenter:.5f}')
                 # print(f'xcat={xcat},ycat={ycat}')
                 # print('---------')
             else:
+                # xc, yc = int(np.round(x))+1, int(np.round(y))+1
+                # xcenter = (x-(xc-1))
+                # ycenter = (y-(yc-1))
                 #zihao:
                 xc, yc = int(np.round(x)), int(np.round(y))
                 xcenter = xcat-xc
@@ -3125,6 +3136,17 @@ class GrismFLT(object):
                       xc-size + self.direct.origin[1]]
 
             thumb = self.direct.data[ext][yc-size:yc+size, xc-size:xc+size]
+
+            # plt.figure(figsize=(10,5))
+            # plt.subplot(121)
+            # plt.imshow(thumb)
+            # plt.axvline(size,ls='--',c='k')
+            # plt.axhline(size,ls='--',c='k')
+            # plt.scatter(size+ycenter,size+xcenter,c='r',label='+')
+            # plt.scatter(size-ycenter,size-xcenter,c='green',label='-')
+            # plt.scatter(size,size,c='m',label='yc')
+            # plt.subplot(122)
+
             seg_thumb = self.seg[yc-size:yc+size, xc-size:xc+size]
 
             # Test that the id is actually in the thumbnail
@@ -4419,8 +4441,14 @@ class BeamCutout(object):
         tab.meta['CONFFILE'] = os.path.basename(self.beam.conf.conf_file)
 
         tab['wavelength'] = np.asarray(self.beam.lam*u.Angstrom,dtype=dtype)
+        # print('---------')
+        # print('get table')
+        # print(self.beam.ytrace)
+        # print('---------')
+
         # Zihao: change to + ycenter
         tab['trace'] = np.asarray(self.beam.ytrace + self.beam.sh_beam[0]/2 + self.beam.ycenter,dtype=dtype)
+        # tab['trace'] = np.asarray(self.beam.ytrace + self.beam.sh_beam[0]/2 - self.beam.ycenter,dtype=dtype)
 
         sens_units = u.erg/u.second/u.cm**2/u.Angstrom/(u.electron/u.second)
         tab['sensitivity'] = np.asarray(self.beam.sensitivity*sens_units,dtype=dtype)

@@ -22,7 +22,7 @@ QUIET_LEVEL = logging.INFO
 
 # CRDS_CONTEXT = 'jwst_0942.pmap' # July 29, 2022 with updated NIRCAM ZPs
 # CRDS_CONTEXT = 'jwst_0995.pmap' # 2022-10-06 NRC ZPs and flats
-CRDS_CONTEXT = "jwst_1123.pmap"  # 2023-09-08 NRC specwcs, etc.
+CRDS_CONTEXT = "jwst_1312.pmap"  # 2023-09-08 NRC specwcs, etc.
 
 # Global variable to control whether or not to try to update
 # PP file WCS
